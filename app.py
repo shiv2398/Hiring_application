@@ -119,9 +119,9 @@ def main():
     avail = st.selectbox('Are you available for 3 months:', ['yes', 'no'])
 
     grade_10 = st.text_input('10th grade (e.g., 86.0/100):')
-    grade_12 = st.text_input('12th grade:')
-    und_grade_post = st.text_input('Under-graduation grade:')
-    grade_post = st.text_input('Post-graduation grade:')
+    grade_12 = st.text_input('12th grade(e.g., 86.0/100):')
+    und_grade_post = st.text_input('graduation grade(e.g., 86.0/100):')
+    grade_post = st.text_input('Post-graduation grade(e.g., 86.0/100):')
     other_skills = st.text_area('Do you have other skills(e.g python,datascience):')
 
     python = int(python) if str(python).isdigit() else 0
