@@ -139,7 +139,7 @@ def main():
     grade_12 = st.text_input('12th grade (e.g., 86.0/100):')
     und_grade_post = st.text_input('graduation grade (e.g., 86.0/100):')
     grade_post = st.text_input('Post-graduation grade (e.g., 86.0/100):')
-    other_skills = st.text_area('Do you have other skills (e.g., python, datascience):')
+    other_skills = st.text_area('Do you have other skills (e.g., python, datascience)Enter minimum 3 skills:')
 
     # Convert input values to appropriate types
     python = int(python) if str(python).isdigit() else None
@@ -203,7 +203,7 @@ def main():
             features = np.array(features).reshape(1, -1)  # Reshape to (1, 11)
             b_features = shaper([python, ml, nlp, dl, avail])
 
-            st.write(features)
+            #st.write(features)
             
             # Call the predict_cluster_classification function
             best_prediction, predicted_cluster, predicted_classification = predict_cluster_classification(features, b_features)
