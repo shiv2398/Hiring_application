@@ -69,14 +69,29 @@ def map_sentence_to_binary(value):
         return 0
     else:
         return None  # or any other default value you prefer
-def grade_checker(g):
-    if isinstance(g,int):
-        return 0
-    x = g.strip()
-    if not re.match(r'^\d+(\.\d+)?/\d+$', x):
-        return 0
+    
+
+def check_grade_format(grade):
+    """
+    Checks if the grade format is '86/100' or '86.0/100' and converts it to a string.
+    If the format is incorrect, it raises an error.
+
+    Parameters:
+    - grade (str): The input grade string.
+
+    Returns:
+    - str: The converted grade string in the format '86/100' or '86.0/100' or an empty string if the format is incorrect.
+    """
+    if grade != '':
+        if not re.match(r'^\d+(\.\d+)?/\d+$', grade):
+            st.error("Grade should be in the format of '86/100' or '86.0/100'.")
+            return ''
+        else:
+            return str(grade)
     else:
-        return g
+        return None
+
+
 
 
 def predict_cluster_classification(features,best_feature):
@@ -108,10 +123,12 @@ def predict_cluster_classification(features,best_feature):
     return predicted_best_prediction_name,predicted_cluster_name, predicted_classification_name
 def shaper(x):
     return np.array([int(i) for i in x]).reshape(1, -1)
+
 def main():
     st.set_page_config(page_title='Intern Selection Process', layout='wide')
     st.title('Best Intern Selection App')
 
+    # Input fields
     python = st.number_input('On a scale of 0-3, how much do you know Python:', min_value=0, max_value=3)
     ml = st.number_input('On a scale of 0-3, how much do you know ML:', min_value=0, max_value=3)
     dl = st.number_input('On a scale of 0-3, how much do you know DL:', min_value=0, max_value=3)
@@ -119,57 +136,83 @@ def main():
     avail = st.selectbox('Are you available for 3 months:', ['yes', 'no'])
 
     grade_10 = st.text_input('10th grade (e.g., 86.0/100):')
-    grade_12 = st.text_input('12th grade(e.g., 86.0/100):')
-    und_grade_post = st.text_input('graduation grade(e.g., 86.0/100):')
-    grade_post = st.text_input('Post-graduation grade(e.g., 86.0/100):')
-    other_skills = st.text_area('Do you have other skills(e.g python,datascience):')
+    grade_12 = st.text_input('12th grade (e.g., 86.0/100):')
+    und_grade_post = st.text_input('graduation grade (e.g., 86.0/100):')
+    grade_post = st.text_input('Post-graduation grade (e.g., 86.0/100):')
+    other_skills = st.text_area('Do you have other skills (e.g., python, datascience):')
 
-    python = int(python) if str(python).isdigit() else 0
-    ml = int(ml) if str(ml).isdigit() else 0
-    dl = int(dl) if str(dl).isdigit() else 0
-    nlp = int(nlp) if str(nlp).isdigit() else 0
-
+    # Convert input values to appropriate types
+    python = int(python) if str(python).isdigit() else None
+    ml = int(ml) if str(ml).isdigit() else None
+    dl = int(dl) if str(dl).isdigit() else None
+    nlp = int(nlp) if str(nlp).isdigit() else None
     avail = map_sentence_to_binary(avail)
-    avail = str(avail) if isinstance(avail, str) else '0'
-    cr = 80
+    cr = 85
 
-    grade_10 = grade_checker(grade_mapping_value(grade_10, cr))
-    grade_12 = grade_checker(grade_mapping_value(grade_12, cr))
-    grade_post = grade_checker(grade_mapping_value(grade_post, cr))
-    und_grade_post = grade_checker(grade_mapping_value(und_grade_post,cr))
-    other_skills = str(other_skills) if isinstance(other_skills, str) else ''
+    # Validate and process grade inputs
+    grade_10 = check_grade_format(grade_10)
+    grade_12 = check_grade_format(grade_12)
+    und_grade_post = check_grade_format(und_grade_post)
+    grade_post = check_grade_format(grade_post)
+    grad_list = [grade_10, grade_12, und_grade_post, grade_post]
+    other_skills = str(other_skills) if isinstance(other_skills, str) else None
 
-    score = 0
-    skill = other_skills.lower()
-    # Check if the skill matches any criteria in the list
-    for criteria_skill in criteria:
-        if criteria_skill.lower() in skill:
-            score = 1
-            break
+    degree = st.text_input('What is your degree (Bachelors/Masters (with stream)):')
+    flag=False
+    if st.button('Predict'):
 
-    degree = st.text_input('What is your degree(Bachelors/Masters(with stream)):')
-    
-    degree_level = 0
-    if isinstance(degree, str):
-        if any(keyword.lower().replace(' ', '') in degree for keyword in graduation_keywords):
+        # Check if all inputs are provided
+        if any(x is None for x in [python, ml, dl, nlp, avail, grade_10, grade_12, und_grade_post, grade_post, other_skills]):
+            st.error("Please enter values for all the inputs before predicting.")
+        elif any(x == '' for x in grad_list):
+            st.error("Please enter valid values for the grade inputs.")
+        elif other_skills is None or other_skills.strip() == '':
+            st.error("Please enter values for the other skills.")
+        elif degree.strip() == '':
+            st.error("Please enter a value for the degree.")
+        else:
+            flag=True
+
+        score = None
+        degree_level = 0
+
+        # Determine degree level based on keywords
+        if any(keyword.lower().replace(' ', '') in degree.lower() for keyword in graduation_keywords):
             degree_level = 1
-        elif any(keyword.lower().replace(' ', '') in degree for keyword in masters_keywords):
+        elif any(keyword.lower().replace(' ', '') in degree.lower() for keyword in masters_keywords):
             degree_level = 2
 
-    features = [python, ml, dl, nlp, avail, grade_10, und_grade_post, grade_12, grade_post, score, degree_level]
-   # ['python', 'ML', 'NLP', 'DL', 'availability']
-    b_features=[python,ml,nlp,dl,avail]
-   
-    features = np.array([int(i) for i in features]).reshape(1, -1)
+        # Process other skills
+        skills_list = [skill.strip().lower() for skill in other_skills.split(',')]
+        invalid_skills = [skill for skill in skills_list if skill not in criteria]
 
-    b_features=shaper(b_features)
+        if len(invalid_skills) > 0:
+            score = 0
+            # st.error("Invalid skills entered. Skills should be in the format of 'python, machine learning, other skills'.")
+        else:
+            score = 1
 
-    if st.button('Predict'):
-        best_prediction,predicted_cluster, predicted_classification = predict_cluster_classification(features,b_features)
-        st.write('Predicted with all features     :  Cluster Model  :  ', predicted_cluster)
-        st.write('Predicted probabilistic labels  :  Classification :  ', predicted_classification)
-        st.write('Prediction with Best Features   :  Cluster Model  :  ',best_prediction)
+        # Map grade values to a common scale
+        grade_10 = grade_mapping_value(grade_10, cr)
+        grade_12 = grade_mapping_value(grade_12, cr)
+        und_grade_post = grade_mapping_value(und_grade_post, cr)
+        grade_post = grade_mapping_value(grade_post, cr)
+        if flag:
+            # Prepare features array
+            features = [python, ml, dl, nlp, avail, grade_10, und_grade_post, grade_12, grade_post, score, degree_level]
+            features = np.array(features).reshape(1, -1)  # Reshape to (1, 11)
+            b_features = shaper([python, ml, nlp, dl, avail])
+
+            st.write(features)
+            
+            # Call the predict_cluster_classification function
+            best_prediction, predicted_cluster, predicted_classification = predict_cluster_classification(features, b_features)
+            
+            # Display the predictions
+        
+            st.write('Predicted with all features: Cluster Model:', predicted_cluster)
+            st.write('Predicted probabilistic labels: Classification:', predicted_classification)
+            st.write('Prediction with Best Features: Cluster Model:', best_prediction)
 
 if __name__ == '__main__':
     main()
-
